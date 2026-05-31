@@ -1,4 +1,9 @@
 <?php
+
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+
 require_once __DIR__ . '/../modelos/Prestamo.php';
 require_once __DIR__ . '/../modelos/Usuario.php';
 require_once __DIR__ . '/../modelos/Libro.php';
@@ -14,8 +19,8 @@ $resultadoFechas = [];
 $resultadoCategorias = [];
 
 if (isset($_GET['buscar_fechas'])) {
-    $desde = $_GET['desde'];
-    $hasta = $_GET['hasta'];
+    $desde = $_GET['desde'] ?? '';
+    $hasta = $_GET['hasta'] ?? '';
 
     if ($desde != "" && $hasta != "") {
         $resultadoFechas = $prestamoModel->buscarPorFechas($desde, $hasta);

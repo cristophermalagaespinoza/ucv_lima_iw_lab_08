@@ -1,4 +1,5 @@
 <?php
+
 require_once __DIR__ . '/../config/conexion.php';
 
 class Prestamo {
@@ -11,12 +12,11 @@ class Prestamo {
     public function registrar($id_libro, $id_usuario, $fecha_inicio, $fecha_fin) {
         $sql = "INSERT INTO prestamo (id_libro, id_usuario, fecha_inicio, fecha_fin)
                 VALUES (?, ?, ?, ?)";
-
         $stmt = $this->db->prepare($sql);
         $resultado = $stmt->execute([$id_libro, $id_usuario, $fecha_inicio, $fecha_fin]);
 
         if ($resultado) {
-            $sqlUsuario = "UPDATE usuario 
+            $sqlUsuario = "UPDATE usuario
                            SET prestamos = prestamos + 1
                            WHERE id = ?";
             $stmtUsuario = $this->db->prepare($sqlUsuario);
@@ -28,7 +28,15 @@ class Prestamo {
 
     public function listar() {
         $sql = "SELECT * FROM prestamo ORDER BY id DESC";
-        return $this->db->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+        $stmt = $this->db->query($sql);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function obtenerPorId($id) {
+        $sql = "SELECT * FROM prestamo WHERE id = ?";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([$id]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
     public function listarRelacionado() {
@@ -47,7 +55,8 @@ class Prestamo {
                 INNER JOIN usuario u ON p.id_usuario = u.id
                 ORDER BY p.fecha_inicio DESC";
 
-        return $this->db->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+        $stmt = $this->db->query($sql);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     public function buscarPorFechas($fecha_inicio, $fecha_fin) {
@@ -69,16 +78,46 @@ class Prestamo {
     }
 
     public function actualizar($id, $id_libro, $id_usuario, $fecha_inicio, $fecha_fin) {
-        $sql = "UPDATE prestamo 
+        $prestamoActual = $this->obtenerPorId($id);
+
+        $sql = "UPDATE prestamo
                 SET id_libro = ?, id_usuario = ?, fecha_inicio = ?, fecha_fin = ?
                 WHERE id = ?";
         $stmt = $this->db->prepare($sql);
-        return $stmt->execute([$id_libro, $id_usuario, $fecha_inicio, $fecha_fin, $id]);
+        $resultado = $stmt->execute([$id_libro, $id_usuario, $fecha_inicio, $fecha_fin, $id]);
+
+        if ($resultado && $prestamoActual && $prestamoActual['id_usuario'] != $id_usuario) {
+            $sqlRestar = "UPDATE usuario
+                          SET prestamos = prestamos - 1
+                          WHERE id = ? AND prestamos > 0";
+            $stmtRestar = $this->db->prepare($sqlRestar);
+            $stmtRestar->execute([$prestamoActual['id_usuario']]);
+
+            $sqlSumar = "UPDATE usuario
+                         SET prestamos = prestamos + 1
+                         WHERE id = ?";
+            $stmtSumar = $this->db->prepare($sqlSumar);
+            $stmtSumar->execute([$id_usuario]);
+        }
+
+        return $resultado;
     }
 
     public function eliminar($id) {
+        $prestamoActual = $this->obtenerPorId($id);
+
         $sql = "DELETE FROM prestamo WHERE id = ?";
         $stmt = $this->db->prepare($sql);
-        return $stmt->execute([$id]);
+        $resultado = $stmt->execute([$id]);
+
+        if ($resultado && $prestamoActual) {
+            $sqlUsuario = "UPDATE usuario
+                           SET prestamos = prestamos - 1
+                           WHERE id = ? AND prestamos > 0";
+            $stmtUsuario = $this->db->prepare($sqlUsuario);
+            $stmtUsuario->execute([$prestamoActual['id_usuario']]);
+        }
+
+        return $resultado;
     }
 }

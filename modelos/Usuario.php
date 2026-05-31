@@ -1,4 +1,5 @@
 <?php
+
 require_once __DIR__ . '/../config/conexion.php';
 
 class Usuario {
@@ -17,11 +18,19 @@ class Usuario {
 
     public function listar() {
         $sql = "SELECT * FROM usuario ORDER BY id DESC";
-        return $this->db->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+        $stmt = $this->db->query($sql);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function obtenerPorId($id) {
+        $sql = "SELECT * FROM usuario WHERE id = ?";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([$id]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
     public function actualizar($id, $nombre, $correo, $membresia) {
-        $sql = "UPDATE usuario 
+        $sql = "UPDATE usuario
                 SET nombre = ?, correo = ?, membresia = ?
                 WHERE id = ?";
         $stmt = $this->db->prepare($sql);
@@ -36,6 +45,7 @@ class Usuario {
 
     public function listarOrdenadosPorPrestamos() {
         $sql = "SELECT * FROM usuario ORDER BY prestamos DESC";
-        return $this->db->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+        $stmt = $this->db->query($sql);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 }
